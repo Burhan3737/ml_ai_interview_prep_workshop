@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The technical round, without the code</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --desk: #DCE3EB;
+    --card: #FFFFFF;
+    --ink: #1B2333;
+    --ink-soft: #4A5568;
+    --rule-red: #C8323C;
+    --rule-blue: #A9C2DE;
+    --core: #2F5D8A;
+    --soft: #2E7D5B;
+    --data: #9A5B00;
+    --ml: #6B3FA0;
+    --you: #8A3B52;
+    --scn: #1F6F7A;
+    --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+    --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+    --u: min(1vw, 1.78vh); /* 16:9-safe unit */
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--desk); color: var(--ink); font-family: var(--body); }
+  body { overflow: hidden; }
+  button, input { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--core); outline-offset: 3px; }
+
+  /* ---------- slide frame ---------- */
+  .deck { position: relative; width: 100vw; height: 100vh; }
+  .slide {
+    position: absolute; inset: 0;
+    display: none;
+    padding: calc(var(--u) * 4) calc(var(--u) * 7) calc(var(--u) * 5);
+    overflow-y: auto;
+  }
+  .slide.active { display: block; }
+  .slide h1, .slide h2 { font-family: var(--display); font-weight: 800; letter-spacing: -0.02em; margin: 0; }
+  .slide h2 { font-size: calc(var(--u) * 4.4); line-height: 1.05; margin-bottom: calc(var(--u) * 3.2); max-width: 26ch; }
+  .lede { font-size: calc(var(--u) * 2); line-height: 1.45; color: var(--ink-soft); max-width: 60ch; margin: 0 0 calc(var(--u) * 3); }
+  p, li { font-size: calc(var(--u) * 1.9); line-height: 1.5; }
+
+  /* index-card surface used across the deck */
+  .sheet {
+    background:
+      linear-gradient(var(--card), var(--card)) padding-box;
+    background-color: var(--card);
+    background-image: repeating-linear-gradient(to bottom, transparent 0, transparent calc(var(--u) * 3.6 - 1px), var(--rule-blue) calc(var(--u) * 3.6 - 1px), var(--rule-blue) calc(var(--u) * 3.6));
+    background-position: 0 calc(var(--u) * 6.2);
+    border-top: 0;
+    position: relative;
+    border-radius: 3px;
+    box-shadow: 0 1px 0 rgba(27,35,51,.08), 0 calc(var(--u) * 1.2) calc(var(--u) * 3) -1.5vh rgba(27,35,51,.28);
+  }
+  .sheet.plain { background-image: none; }
+  .sheet::before { /* the red header rule of an index card */
+    content: ""; position: absolute; left: 0; right: 0; top: calc(var(--u) * 6.2); height: 2px; background: var(--rule-red);
+  }
+
+  /* ---------- title slide ---------- */
+  .title-wrap { height: 100%; display: grid; grid-template-columns: 1.1fr 1fr; align-items: center; gap: calc(var(--u) * 5); }
+  .title-wrap h1 { font-size: calc(var(--u) * 6); line-height: .98; }
+  .title-wrap .lede { margin-top: calc(var(--u) * 3); }
+  .stack { position: relative; height: calc(var(--u) * 40); }
+  .stack .sheet { position: absolute; width: 88%; height: calc(var(--u) * 27); padding: calc(var(--u) * 1.6) calc(var(--u) * 2.4); }
+  .stack .sheet:nth-child(1) { transform: rotate(-7deg) translate(-4%, 6%); }
+  .stack .sheet:nth-child(2) { transform: rotate(4deg) translate(8%, 18%); }
+  .stack .sheet:nth-child(3) { transform: rotate(-1.5deg) translate(2%, 34%); }
+  .stack .tag { font-size: calc(var(--u) * 1.4); font-weight: 700; color: var(--ink-soft); }
+  .stack .q { font-family: var(--display); font-weight: 700; font-size: calc(var(--u) * 2.5); line-height: 1.44; margin-top: calc(var(--u) * 3.4); }
+
+  /* ---------- flow (sequence) ---------- */
+  .flow { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: calc(var(--u) * 1.6); counter-reset: step; }
+  .flow li { counter-increment: step; border-top: 4px solid var(--ink); padding-top: calc(var(--u) * 1.4); }
+  .flow li::before { content: counter(step); display: block; font-family: var(--display); font-weight: 800; font-size: calc(var(--u) * 5); line-height: 1; color: var(--rule-red); margin-bottom: calc(var(--u) * 1); }
+  .flow b { display: block; font-family: var(--display); font-size: calc(var(--u) * 2.4); margin-bottom: calc(var(--u) * .6); }
+  .flow span { font-size: calc(var(--u) * 1.7); color: var(--ink-soft); line-height: 1.45; display: block; }
+  .flow .time { font-weight: 700; color: var(--ink); margin-top: calc(var(--u) * .8); }
+  .note { margin-top: calc(var(--u) * 4); font-size: calc(var(--u) * 1.9); max-width: 70ch; border-left: 4px solid var(--rule-red); padding-left: calc(var(--u) * 1.6); }
+
+  /* ---------- rubric ---------- */
+  table.rubric { width: 100%; border-collapse: collapse; font-size: calc(var(--u) * 1.6); background: var(--card); }
+  .rubric th, .rubric td { text-align: left; vertical-align: top; padding: calc(var(--u) * .75) calc(var(--u) * 1.3); border-bottom: 1px solid var(--rule-blue); line-height: 1.35; }
+  .rubric thead th { font-family: var(--display); font-size: calc(var(--u) * 1.8); border-bottom: 2px solid var(--rule-red); }
+  .rubric tbody th { font-family: var(--display); font-size: calc(var(--u) * 1.8); width: 25%; }
+  .rubric td:nth-child(2) { color: var(--ink-soft); }
+  .bands { display: flex; gap: calc(var(--u) * 3); margin-top: calc(var(--u) * 1.6); font-size: calc(var(--u) * 1.8); }
+  .bands b { font-family: var(--display); }
+
+  /* ---------- CLEAR map ---------- */
+  .clear { display: grid; grid-template-columns: repeat(5, 1fr); gap: calc(var(--u) * 1.4); }
+  .clear .sheet { padding: calc(var(--u) * 1.2) calc(var(--u) * 1.8) calc(var(--u) * 2); }
+  .clear .letter { font-family: var(--display); font-weight: 800; font-size: calc(var(--u) * 5.6); line-height: 1; color: var(--rule-red); height: calc(var(--u) * 5); }
+  .clear h3 { font-family: var(--display); font-size: calc(var(--u) * 2.4); margin: calc(var(--u) * 2) 0 calc(var(--u) * .8); }
+  .clear p { font-size: calc(var(--u) * 1.75); line-height: 1.45; margin: 0 0 calc(var(--u) * 1.2); }
+  .clear .say { font-style: italic; color: var(--ink-soft); }
+
+  .habits { list-style: none; margin: 0; padding: 0; background: var(--card); }
+  .habits li { display: grid; grid-template-columns: calc(var(--u) * 3.2) 1.25fr 1.5fr 1.4fr; gap: calc(var(--u) * 2); align-items: baseline; padding: calc(var(--u) * .9) calc(var(--u) * 2); border-bottom: 1px solid var(--rule-blue); font-size: calc(var(--u) * 1.7); line-height: 1.4; }
+  .habits li:first-child { border-top: 2px solid var(--rule-red); }
+  .habits .n { font-family: var(--display); font-weight: 800; font-size: calc(var(--u) * 2.8); color: var(--rule-red); line-height: 1; }
+  .habits b { font-family: var(--display); font-size: calc(var(--u) * 2); line-height: 1.15; }
+  .habits i { color: var(--ink-soft); }
+  /* ---------- question types ---------- */
+  .types { display: grid; grid-template-columns: repeat(5, 1fr); gap: calc(var(--u) * 2); }
+  .types h3 { font-family: var(--display); font-size: calc(var(--u) * 2.4); margin: 0 0 calc(var(--u) * .4); }
+  .types .eg { font-size: calc(var(--u) * 1.55); color: var(--ink-soft); font-style: italic; margin: 0 0 calc(var(--u) * 1.2); min-height: calc(var(--u) * 4.8); line-height: 1.4; }
+  .types ol { margin: 0; padding-left: calc(var(--u) * 2.2); border-top: 2px solid var(--ink); padding-top: calc(var(--u) * 1); }
+  .types li { font-size: calc(var(--u) * 1.65); line-height: 1.4; margin-bottom: calc(var(--u) * .5); }
+
+  /* ---------- two column text slides ---------- */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--u) * 5); }
+  .cols h3 { font-family: var(--display); font-size: calc(var(--u) * 2.6); margin: 0 0 calc(var(--u) * 1.2); }
+  .cols ul { margin: 0; padding-left: calc(var(--u) * 2.4); }
+  .cols li { margin-bottom: calc(var(--u) * .9); }
+  .script { background: var(--card); padding: calc(var(--u) * 2) calc(var(--u) * 2.6); border-left: 5px solid var(--rule-red); font-size: calc(var(--u) * 2.1); line-height: 1.5; font-style: italic; }
+  .script p { margin: 0 0 calc(var(--u) * 1.2); font-size: inherit; }
+  .script p:last-child { margin: 0; }
+  .avoid li::marker { content: "✕  "; color: var(--rule-red); font-weight: 700; }
+
+  /* ---------- warm-up ---------- */
+  .warm { display: grid; grid-template-columns: 1.15fr 1fr; gap: calc(var(--u) * 5); align-items: start; }
+  .warm .sheet { padding: calc(var(--u) * 1.4) calc(var(--u) * 3) calc(var(--u) * 3.6); }
+  .warm .big { font-family: var(--display); font-weight: 800; font-size: calc(var(--u) * 4.6); line-height: 1.17; margin-top: calc(var(--u) * 5.4); }
+  .warm ol { padding-left: calc(var(--u) * 2.6); margin: 0; }
+  .warm li { margin-bottom: calc(var(--u) * 1); }
+  .warm li b { font-family: var(--display); }
+
+  /* ---------- board ---------- */
+  #board-slide { padding: calc(var(--u) * 2) calc(var(--u) * 4) calc(var(--u) * 4.4); }
+  .board-top { display: flex; flex-wrap: wrap; align-items: center; gap: calc(var(--u) * 1.2) calc(var(--u) * 1.6); margin-bottom: calc(var(--u) * 1.4); }
+  .board-top .filters { order: 5; flex-basis: 100%; display: flex; flex-wrap: wrap; gap: calc(var(--u) * .7) calc(var(--u) * 2.4); }
+  #years .chip { border-color: var(--rule-red); color: var(--rule-red); }
+  #years .chip[aria-pressed="true"] { background: var(--rule-red); color: #fff; }
+  .board-top h2 { margin: 0 calc(var(--u) * 2) 0 0; font-size: calc(var(--u) * 3.2); }
+  .chips { display: flex; flex-wrap: wrap; gap: calc(var(--u) * .7); }
+  .chip { border: 2px solid var(--ink); background: transparent; border-radius: 999px; padding: calc(var(--u) * .45) calc(var(--u) * 1.4); font-size: calc(var(--u) * 1.5); font-weight: 700; cursor: pointer; }
+  .chip[aria-pressed="true"] { background: var(--ink); color: var(--card); }
+  .seat { display: flex; align-items: center; gap: calc(var(--u) * .8); margin-left: auto; font-size: calc(var(--u) * 1.6); }
+  .seat input { border: 0; border-bottom: 2px solid var(--ink); background: transparent; padding: calc(var(--u) * .3) calc(var(--u) * .4); width: calc(var(--u) * 11); font-size: calc(var(--u) * 1.7); }
+  .draw { background: var(--rule-red); color: #fff; border: 0; border-radius: 4px; padding: calc(var(--u) * .9) calc(var(--u) * 2.4); font-family: var(--display); font-weight: 700; font-size: calc(var(--u) * 2); cursor: pointer; }
+  .draw:hover { filter: brightness(1.08); }
+  .grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: calc(var(--u) * .8); }
+  .qcard {
+    position: relative; text-align: left; background: var(--card); border: 0; border-radius: 3px; cursor: pointer;
+    padding: calc(var(--u) * .7) calc(var(--u) * 1) calc(var(--u) * .9);
+    border-top: calc(var(--u) * .55) solid var(--track);
+    box-shadow: 0 1px 0 rgba(27,35,51,.08), 0 6px 14px -8px rgba(27,35,51,.35);
+    min-height: 0;
+    display: flex; flex-direction: column; gap: calc(var(--u) * .4);
+  }
+  .qcard .id { font-family: var(--display); font-weight: 800; font-size: calc(var(--u) * 1.45); color: var(--track); }
+  .qcard .short { font-size: calc(var(--u) * 1.4); line-height: 1.2; font-weight: 700; }
+  .qcard .lvl { margin-top: auto; padding-top: 0; font-size: calc(var(--u) * 1.2); color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .qcard.used { opacity: .38; }
+  .qcard.used::after { content: "✓"; position: absolute; right: calc(var(--u) * 1); top: calc(var(--u) * .6); font-weight: 700; font-size: calc(var(--u) * 2); color: var(--ink-soft); }
+  .qcard.hidden { display: none; }
+  .qcard.flash { outline: 4px solid var(--rule-red); outline-offset: 2px; }
+  .board-foot { flex-direction: column; align-items: flex-start; gap: calc(var(--u) * .2) !important; margin-top: 0; display: flex; gap: calc(var(--u) * 3); align-items: center; font-size: calc(var(--u) * 1.45); color: var(--ink-soft); }
+  .board-foot button { background: none; border: 0; text-decoration: underline; cursor: pointer; color: var(--ink-soft); font-size: inherit; padding: 0; }
+  .legend { display: flex; gap: calc(var(--u) * 2); }
+  .legend span::before { content: ""; display: inline-block; width: calc(var(--u) * 1.2); height: calc(var(--u) * 1.2); background: var(--track); margin-right: calc(var(--u) * .5); vertical-align: -0.1em; }
+
+  /* compact 6x6 board */
+  .qcard { flex-direction: row; align-items: baseline; gap: calc(var(--u) * .9); padding: calc(var(--u) * .8) calc(var(--u) * 1.1); min-height: calc(var(--u) * 5.6); }
+  .qcard .id { flex: 0 0 calc(var(--u) * 2.9); }
+  .qcard .short { font-size: calc(var(--u) * 1.5); }
+  .qcard .lvl { display: none; }
+  .grid { gap: calc(var(--u) * .7); }
+  /* ---------- open card overlay ---------- */
+  .overlay { position: fixed; inset: 0; background: rgba(27,35,51,.55); display: none; align-items: center; justify-content: center; z-index: 10; padding: 3vh 4vw; }
+  .overlay.open { display: flex; }
+  .big-card { width: min(92vw, 160vh); max-height: 94vh; overflow-y: auto; padding: calc(var(--u) * 1.4) calc(var(--u) * 4) calc(var(--u) * 3); }
+  .big-card .meta { display: flex; align-items: baseline; gap: calc(var(--u) * 2); height: calc(var(--u) * 4.6); font-size: calc(var(--u) * 1.7); color: var(--ink-soft); }
+  .big-card .meta .id { font-family: var(--display); font-weight: 800; font-size: calc(var(--u) * 3); color: var(--track); }
+  .big-card .meta .who { margin-left: auto; font-weight: 700; color: var(--ink); }
+  .big-card .text { font-family: var(--display); font-weight: 700; font-size: calc(var(--u) * 4.2); line-height: 1.29; margin: calc(var(--u) * 2.6) 0 calc(var(--u) * 2.4); max-width: 40ch; }
+  .recipe { background: var(--desk); padding: calc(var(--u) * 1.2) calc(var(--u) * 2); font-size: calc(var(--u) * 1.75); border-left: 5px solid var(--track); }
+  .recipe b { font-family: var(--display); }
+  .timer-row { display: flex; align-items: center; gap: calc(var(--u) * 2); margin-top: calc(var(--u) * 2.4); flex-wrap: wrap; }
+  .clock { font-family: var(--display); font-weight: 800; font-size: calc(var(--u) * 6); font-variant-numeric: tabular-nums; line-height: 1; min-width: 4.2ch; }
+  .phase { font-size: calc(var(--u) * 1.9); font-weight: 700; min-width: 16ch; }
+  .clock.low { color: var(--rule-red); }
+  .btn { border: 2px solid var(--ink); background: var(--card); border-radius: 4px; padding: calc(var(--u) * .7) calc(var(--u) * 1.6); font-weight: 700; font-size: calc(var(--u) * 1.6); cursor: pointer; }
+  .btn.primary { background: var(--ink); color: var(--card); }
+  .card-actions { display: flex; gap: calc(var(--u) * 1); margin-left: auto; }
+  @keyframes timeup { 0%,100% { background: var(--rule-red); } 50% { background: transparent; } }
+  .big-card.timeup::before { height: 6px; animation: timeup 1s ease-in-out 3; }
+
+  /* ---------- nav chrome ---------- */
+  .nav { position: fixed; right: calc(var(--u) * 3); bottom: calc(var(--u) * 2.4); display: flex; align-items: center; gap: calc(var(--u) * 1); font-size: calc(var(--u) * 1.4); color: var(--ink-soft); z-index: 5; }
+  .nav button { border: 0; background: transparent; cursor: pointer; font-size: calc(var(--u) * 2.2); padding: 0 calc(var(--u) * .6); color: var(--ink-soft); }
+  .progress { position: fixed; left: 0; bottom: 0; height: 4px; background: var(--rule-red); transition: width .25s; z-index: 5; }
+
+  /* ---------- wrap ---------- */
+  .take { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--u) * 1.6) calc(var(--u) * 5); max-width: 150ch; }
+  .take li { border-top: 2px solid var(--ink); padding-top: calc(var(--u) * 1); }
+  .take b { font-family: var(--display); font-size: calc(var(--u) * 2.2); display: block; margin-bottom: calc(var(--u) * .3); }
+
+  @media (max-width: 900px), (max-aspect-ratio: 1/1) {
+    .habits li { grid-template-columns: calc(var(--u) * 4) 1fr; }
+    .habits li span:not(.n), .habits li i { grid-column: 2; }
+    body { overflow: auto; }
+    :root { --u: 2.2vw; }
+    .title-wrap, .cols, .warm { grid-template-columns: 1fr; }
+    .flow, .clear, .types { grid-template-columns: 1fr 1fr; }
+    .grid { grid-template-columns: repeat(3, 1fr); }
+    .board-top .seat { margin-left: 0; }
+    .stack { display: none; }
+    .take { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+
+  <!-- 1 title -->
+  <section class="slide" data-title="Welcome">
+    <div class="title-wrap">
+      <div>
+        <h1>The technical round, without the code</h1>
+        <p class="lede">You'll get one open CS problem, picked at random. There's no single right answer, and no code to write. We'll talk it through the way a real technical interview would, and then you'll get feedback on how you approached it.</p>
+      </div>
+      <div class="stack" aria-hidden="true">
+        <div class="sheet"><div class="tag">Data &amp; databases</div><div class="q">A 20 GB log file and 8 GB of RAM. Find the 10 most frequent IP addresses.</div></div>
+        <div class="sheet"><div class="tag">AI &amp; ML</div><div class="q">Your model scores 98% on training data and 60% on new data. What's going on?</div></div>
+        <div class="sheet"><div class="tag">Algorithms</div><div class="q">How would you implement undo and redo in a text editor?</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 mindset -->
+  <section class="slide" data-title="What this is really about">
+    <div class="warm">
+      <div class="sheet plain"><div class="big" style="font-size: calc(var(--u) * 3.6); line-height: 1.2">The technical interview is not only about whether you can solve the problem. It's about how you approach it and try to solve it.</div></div>
+      <div>
+        <p class="lede" style="margin-bottom: calc(var(--u) * 1.6)">So in this interview:</p>
+        <ul style="padding-left: calc(var(--u) * 2.4); margin: 0">
+          <li>Questions are allowed, and expected. The problem is deliberately missing details.</li>
+          <li>I won't give hints. The habits on the next slide are your guide.</li>
+          <li>I might change something halfway through. That's on purpose.</li>
+          <li>You don't need to have memorised anything. Saying "I don't know that, but here's how I'd find out" is a good answer.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 habits -->
+  <section class="slide" data-title="Five habits">
+    <h2 style="margin-bottom: calc(var(--u) * 2.4)">Five habits interviewers look for</h2>
+    <ol class="habits">
+      <li><span class="n">1</span><b>Clarify the problem</b><span>Ask questions, then state and check your assumptions.</span><i>"How much data are we talking about? I'll assume it's one user at a time."</i></li>
+      <li><span class="n">2</span><b>Think out loud</b><span>Compare two or three options and their trade-offs.</span><i>"We could use a list or a hash map. The list is simpler, but…"</i></li>
+      <li><span class="n">3</span><b>Explain your decisions</b><span>Say why you chose it. Listen to what the interviewer tells you, and use it.</span><i>"Since you said it's mostly reads, I'd pick B because…"</i></li>
+      <li><span class="n">4</span><b>Start simple, then improve and check it</b><span>Get a basic version, improve it, then test it against edge cases.</span><i>"That works. Now what if the input is empty, or huge?"</i></li>
+      <li><span class="n">5</span><b>Be honest about what you don't know</b><span>Say so, then reason from what you do know.</span><i>"I haven't used that. My guess is…, and I'd check by…"</i></li>
+    </ol>
+  </section>
+
+  <!-- 4 how this works -->
+  <section class="slide" data-title="How this works">
+    <h2>How this works</h2>
+    <ol class="flow" style="grid-template-columns: repeat(4, 1fr)">
+      <li><b>Draw</b><span>A problem is drawn at random and shown on screen.</span><span class="time">a few seconds</span></li>
+      <li><b>Think</b><span>Plan quietly. Jot down questions and ideas if you like.</span><span class="time">1 minute</span></li>
+      <li><b>Answer</b><span>Talk it through out loud. Ask me questions whenever you need to. I'll answer them, but I won't give hints.</span><span class="time">3 minutes</span></li>
+      <li><b>Feedback</b><span>What you did well, and what to work on next time.</span><span class="time">a few minutes</span></li>
+    </ol>
+    <p class="note">Think out loud. I can only give feedback on the thinking I can hear.</p>
+  </section>
+
+  <!-- 6 stuck -->
+  <section class="slide" data-title="When you're stuck">
+    <h2>When you're stuck</h2>
+    <div class="cols">
+      <div>
+        <h3>Say something like this</h3>
+        <div class="script">
+          <p>"I haven't come across that before, but here's how I'd reason about it."</p>
+          <p>"Can I check what you mean by…?"</p>
+          <p>"Let me try a small example first."</p>
+          <p>"Give me ten seconds to think."</p>
+        </div>
+      </div>
+      <div>
+        <h3>Avoid</h3>
+        <ul class="avoid">
+          <li>Pretending to know. Follow-up questions are designed to find it.</li>
+          <li>A flat "I don't know" followed by silence.</li>
+          <li>Going quiet for a long time while you think.</li>
+          <li>Forgetting to ask. If something is unclear, ask me. That's what the questions are for.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 board -->
+  <section class="slide" data-title="Question board" id="board-slide">
+    <div class="board-top">
+      <h2>Question board</h2>
+      <div class="board-foot">
+        <button id="resetUsed">Clear used marks</button>
+      </div>
+      <div class="filters">
+        <div class="chips" role="group" aria-label="Filter by track" id="chips"></div>
+      </div>
+      <label class="seat">In the hot seat <input id="who" placeholder="Student name" autocomplete="off"></label>
+      <button class="draw" id="drawBtn">Draw a question</button>
+    </div>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <!-- 8 wrap -->
+  <section class="slide" data-title="Take this with you">
+    <h2>Take this with you</h2>
+    <ul class="take">
+      <li><b>It's about the approach</b>Interviewers watch how you think, not only whether you reach the answer.</li>
+      <li><b>Clarify before you solve</b>Ask questions and say your assumptions out loud. It saves you from solving the wrong problem.</li>
+      <li><b>Check your answer</b>Before you say you're done, test it on an example and an edge case.</li>
+      <li><b>Always have a second option</b>Then explain why you chose one over the other.</li>
+      <li><b>Listen closely</b>When the interviewer answers a question or changes something, use it straight away.</li>
+      <li><b>Never pretend</b>"I don't know, but here's how I'd find out" is a strong answer.</li>
+    </ul>
+    <button class="draw" id="nextStudent" style="margin-top: calc(var(--u) * 2)">Next student</button>
+  </section>
+
+  <!-- open card -->
+  <div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="bcText">
+    <div class="sheet plain big-card" id="bigCard">
+      <div class="meta"><span class="id" id="bcId"></span><span id="bcTrack"></span><span id="bcLevel"></span><span class="who" id="bcWho"></span></div>
+      <div class="text" id="bcText"></div>
+      <div class="recipe" id="bcRecipe"></div>
+      <div class="timer-row">
+        <div class="clock" id="clock">1:00</div>
+        <div class="phase" id="phase">Thinking time</div>
+        <button class="btn primary" id="startBtn">Start</button>
+        <button class="btn" id="skipBtn">Skip to answer</button>
+        <button class="btn" id="resetBtn">Reset</button>
+        <div class="card-actions">
+          <button class="btn" id="doneBtn">Mark done and close</button>
+          <button class="btn" id="closeBtn">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="nav" aria-label="Slide navigation">
+  <button id="prev" aria-label="Previous slide">‹</button>
+  <span id="count"></span>
+  <button id="next" aria-label="Next slide">›</button>
+</div>
+<div class="progress" id="progress"></div>
+
+<script>
+const TRACKS = {
+  alg:  { name: "Algorithms", color: "var(--core)" },
+  sys:  { name: "Systems & software", color: "var(--soft)" },
+  data: { name: "Data & databases", color: "var(--data)" },
+  ml:   { name: "AI & ML", color: "var(--ml)" },
+  scn:  { name: "Scenarios", color: "var(--scn)" },
+  you:  { name: "Your experience", color: "var(--you)" },
+};
+const REMINDER = "<b>1 minute to think, then 3 minutes to answer out loud.</b> Ask questions whenever you need to, state your assumptions, talk through your options, and explain why you pick one.";
+const Q = [
+  ["A1","alg","Design","Design","How would you implement undo and redo in a text editor?","Undo and redo"],
+  ["A2","alg","Design","Design","A game has 5 million players whose scores change all the time. How would you keep track of the top 10 so it can be shown instantly?","Live leaderboard"],
+  ["A3","alg","Problem","Problem","How would a maps app find the fastest route between two places?","Fastest route"],
+  ["A4","alg","Design","Design","As someone types into a search box, how would you quickly find the saved search terms that start with what they've typed so far?","Search autocomplete"],
+  ["A5","alg","Problem","Problem","You have a list of all of today's meetings, each with a start and end time. What is the smallest number of meeting rooms needed so no two meetings clash, and how would you work it out?","Meeting rooms"],
+  ["A6","alg","Problem","Problem","A hard drive has 500,000 files, and many are duplicates. How would you find them efficiently?","Duplicate files"],
+  ["S1","sys","Design","Design","In a chat app like WhatsApp, how would you make sure a message still reaches someone whose phone is offline when it's sent?","Chat app"],
+  ["S2","sys","Debug","Debug","A web page takes 8 seconds to load. Walk me through how you'd find where the time goes.","8-second page load"],
+  ["S3","sys","Debug","Debug","A concert-ticket website crashes every time popular tickets go on sale and thousands of people arrive at once. What would you do?","Ticket site crashes"],
+  ["S4","sys","Problem","Problem","Two people edit the same sentence in a shared document at the same moment. How should the system decide what the final text is?","Simultaneous edits"],
+  ["S5","sys","Design","Design","A URL shortener turns a long link into a short code like bit.ly/x7Kq2. How would you generate those codes so that no two links get the same one?","URL shortener"],
+  ["S6","sys","Design","Design","What classes would you need for a parking garage that tracks cars, spaces and tickets, and how would they relate to each other?","Parking garage"],
+  ["D1","data","Design","Design","A university needs to record which students are enrolled in which courses. Each student takes many courses, and each course has many students. How would you set up the tables?","University database"],
+  ["D2","data","Debug","Debug","The number of daily sign-ups on a website dropped by 20% yesterday. How would you figure out why?","Sign-ups down 20%"],
+  ["D3","data","Problem","Problem","You have a 20 GB log file and a laptop with 8 GB of RAM. How would you find the 10 most frequent IP addresses?","20 GB log, 8 GB RAM"],
+  ["D4","data","Problem","Problem","You're given a dataset where several columns have lots of missing values. How would you decide what to do about them?","Missing values"],
+  ["D5","data","Problem","Problem","You need to merge customer records from two systems, but names and emails are written differently in each. How would you match them?","Messy merge"],
+  ["D6","data","Design","Design","You're building an app that stores user profiles, posts and payments. Would you use a SQL or a NoSQL database, and why?","SQL or NoSQL?"],
+  ["M1","ml","Problem","Problem","You have only 200 labelled photos and need a model that tells cats from dogs. How would you approach it?","Cats vs dogs"],
+  ["M2","ml","Design","Design","How would you build a filter that decides whether an incoming email is spam?","Spam filter"],
+  ["M3","ml","Problem","Problem","A colleague says their model for spotting fraudulent transactions is 99% accurate. What questions would you ask before trusting it?","\"99% accurate\""],
+  ["M4","ml","Design","Design","How would you recommend movies to a brand-new user who hasn't watched anything yet?","Movies for new users"],
+  ["M5","ml","Debug","Debug","Your model scores 98% on the training data but 60% on new data. What's going on, and what would you try?","98% train, 60% new"],
+  ["M6","ml","Design","Design","A chatbot answers students' questions using the university handbook. How would it find the right part of the handbook to answer from?","Handbook chatbot"],
+  ["SC1","scn","Scenario","Scenario","A release is due on Friday, and while testing you find a bug that will affect about 2% of users. There's no time to fix it properly. Do you ship?","Ship with a bug?"],
+  ["SC2","scn","Scenario","Scenario","You join a team, and the code you need to change is large, unfamiliar, and has no tests and no documentation. How do you start?","No tests, no docs"],
+  ["SC3","scn","Scenario","Scenario","Your feature passed code review, but an hour after release it took the site down. What do you do in the first 30 minutes?","Broke the site"],
+  ["SC4","scn","Scenario","Scenario","You own a feature due next week. Halfway through, you realise it can't be finished in time. What do you do?","Won't make deadline"],
+  ["SC5","scn","Scenario","Scenario","A teammate wants to rewrite a working system in a new language or framework. You think it's a bad idea. How do you handle it?","Rewrite it?"],
+  ["SC6","scn","Scenario","Scenario","Your manager asks you to build a feature that stores users' passwords in a way you think is unsafe. What do you do?","Unsafe passwords"],
+  ["E1","you","Your experience","Your experience","Walk me through the hardest bug you've fixed. How did you narrow it down?","Hardest bug you fixed"],
+  ["E2","you","Your experience","Your experience","Tell me about a technical decision you made in a project or assignment. What were the options, and why did you choose yours?","A technical decision"],
+  ["E3","you","Your experience","Your experience","Tell me about something technical you didn't understand at first and had to learn quickly. How did you learn it?","Hard to learn"],
+  ["E4","you","Your experience","Your experience","Tell me about feedback you got on your code or project, from a teammate, TA or reviewer. What did you change, and what did you push back on?","Code feedback"],
+  ["E5","you","Your experience","Your experience","Tell me about a project you'd build differently now. What would you change, and why?","Do it differently"],
+  ["E6","you","Your experience","Your experience","Tell me about a time you had to start a task with a vague or incomplete brief. What did you do?","Vague brief"],
+].map(([id, track, level, type, text, short]) => ({ id, track, level, type, text, short }));
+
+/* ---------- slides ---------- */
+const slides = [...document.querySelectorAll(".slide")];
+let cur = 0;
+function show(i) {
+  cur = Math.max(0, Math.min(slides.length - 1, i));
+  slides.forEach((s, k) => s.classList.toggle("active", k === cur));
+  document.getElementById("count").textContent = `${cur + 1} / ${slides.length}`;
+  document.getElementById("progress").style.width = `${((cur + 1) / slides.length) * 100}%`;
+  history.replaceState(null, "", "#" + (cur + 1));
+}
+document.getElementById("prev").onclick = () => show(cur - 1);
+document.getElementById("next").onclick = () => show(cur + 1);
+
+/* ---------- board ---------- */
+const USED_KEY = "nctq-used-v7";
+let used = new Set(JSON.parse(localStorage.getItem(USED_KEY) || "[]"));
+let filter = "all";
+const grid = document.getElementById("grid");
+const chips = document.getElementById("chips");
+
+function makeChips(box, items, isOn, set) {
+  items.forEach(([k, name]) => {
+    const b = document.createElement("button");
+    b.className = "chip"; b.textContent = name; b.dataset.k = k;
+    b.setAttribute("aria-pressed", isOn(k));
+    b.onclick = () => { set(k); box.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", c.dataset.k === k)); render(); };
+    box.appendChild(b);
+  });
+}
+makeChips(chips, [["all", "All tracks"], ...Object.entries(TRACKS).map(([k, t]) => [k, t.name])], k => k === "all", k => { filter = k; });
+
+Q.forEach(q => {
+  const b = document.createElement("button");
+  b.className = "qcard"; b.dataset.id = q.id;
+  b.style.setProperty("--track", TRACKS[q.track].color);
+  b.innerHTML = `<span class="id">${q.id}</span><span class="short">${q.short}</span><span class="lvl">${q.type}</span>`;
+  b.setAttribute("aria-label", `${q.id}: ${q.text}`);
+  b.onclick = () => openCard(q);
+  q.el = b;
+  grid.appendChild(b);
+});
+
+function render() {
+  Q.forEach(q => {
+    q.el.classList.toggle("hidden", filter !== "all" && q.track !== filter);
+    q.el.classList.toggle("used", used.has(q.id));
+  });
+  const pool = eligible();
+}
+function eligible() { return Q.filter(q => (filter === "all" || q.track === filter) && !used.has(q.id)); }
+function saveUsed() { localStorage.setItem(USED_KEY, JSON.stringify([...used])); render(); }
+document.getElementById("resetUsed").onclick = () => { used.clear(); saveUsed(); };
+
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let drawing = false;
+document.getElementById("nextStudent").onclick = nextStudent;
+function nextStudent() { document.getElementById("who").value = ""; show(0); }
+function draw() {
+  if (drawing) return;
+  const pool = eligible();
+  if (!pool.length) { const d = document.getElementById("drawBtn"); d.textContent = "All drawn. Clear marks first"; setTimeout(() => { d.textContent = "Draw a question"; }, 2500); return; }
+  const pick = pool[Math.floor(Math.random() * pool.length)];
+  if (reduceMotion || pool.length === 1) return openCard(pick);
+  drawing = true;
+  let n = 0, delay = 45, prev = null;
+  const steps = 16 + Math.floor(Math.random() * 6);
+  (function tick() {
+    if (prev) prev.el.classList.remove("flash");
+    const q = n >= steps ? pick : pool[Math.floor(Math.random() * pool.length)];
+    q.el.classList.add("flash"); prev = q;
+    if (n++ < steps) { delay *= 1.1; setTimeout(tick, delay); }
+    else setTimeout(() => { q.el.classList.remove("flash"); drawing = false; openCard(pick); }, 550);
+  })();
+}
+document.getElementById("drawBtn").onclick = draw;
+
+/* ---------- card + timer ---------- */
+const overlay = document.getElementById("overlay");
+const bigCard = document.getElementById("bigCard");
+const clockEl = document.getElementById("clock"), phaseEl = document.getElementById("phase"), startBtn = document.getElementById("startBtn");
+const PHASES = [{ label: "Thinking time", secs: 60 }, { label: "Answer time", secs: 180 }];
+let current = null, phaseIdx = 0, left = 60, timer = null, lastFocus = null;
+
+function openCard(q) {
+  current = q; lastFocus = document.activeElement;
+  bigCard.style.setProperty("--track", TRACKS[q.track].color);
+  document.getElementById("bcId").textContent = q.id;
+  document.getElementById("bcTrack").textContent = TRACKS[q.track].name;
+  document.getElementById("bcLevel").textContent = q.level;
+  document.getElementById("bcWho").textContent = document.getElementById("who").value.trim();
+  document.getElementById("bcText").textContent = q.text;
+  document.getElementById("bcText").style.fontSize = `calc(var(--u) * ${Math.max(2.7, Math.min(4.2, 4.2 - (q.text.length - 90) * 0.016)).toFixed(2)})`;
+  document.getElementById("bcRecipe").innerHTML = REMINDER;
+  resetTimer();
+  overlay.classList.add("open");
+  startBtn.focus();
+}
+function closeCard(markDone) {
+  stopTimer();
+  if (markDone && current) { used.add(current.id); saveUsed(); }
+  overlay.classList.remove("open"); current = null;
+  if (lastFocus) lastFocus.focus();
+}
+function fmt(s) { return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; }
+function paint() {
+  clockEl.textContent = fmt(left);
+  clockEl.classList.toggle("low", left <= 15 && timer !== null);
+  phaseEl.textContent = left === 0 && phaseIdx === PHASES.length - 1 ? "Time. Feedback now." : PHASES[phaseIdx].label;
+}
+function stopTimer() { clearInterval(timer); timer = null; }
+function resetTimer() {
+  stopTimer(); phaseIdx = 0; left = PHASES[0].secs; bigCard.classList.remove("timeup");
+  startBtn.textContent = "Start"; paint();
+}
+function startPause() {
+  if (timer) { stopTimer(); startBtn.textContent = "Resume"; paint(); return; }
+  if (left === 0 && phaseIdx === PHASES.length - 1) return;
+  startBtn.textContent = "Pause";
+  timer = setInterval(() => {
+    left--;
+    if (left <= 0) {
+      left = 0;
+      bigCard.classList.remove("timeup"); void bigCard.offsetWidth; bigCard.classList.add("timeup");
+      if (phaseIdx < PHASES.length - 1) { phaseIdx++; left = PHASES[phaseIdx].secs; }
+      else { stopTimer(); startBtn.textContent = "Done"; }
+    }
+    paint();
+  }, 1000);
+  paint();
+}
+function skipToAnswer() { stopTimer(); phaseIdx = 1; left = PHASES[1].secs; startBtn.textContent = "Start"; paint(); }
+startBtn.onclick = startPause;
+document.getElementById("skipBtn").onclick = skipToAnswer;
+document.getElementById("resetBtn").onclick = resetTimer;
+document.getElementById("doneBtn").onclick = () => closeCard(true);
+document.getElementById("closeBtn").onclick = () => closeCard(false);
+overlay.addEventListener("click", e => { if (e.target === overlay) closeCard(false); });
+
+/* ---------- keys ---------- */
+document.addEventListener("keydown", e => {
+  if (e.target.tagName === "INPUT") { if (e.key === "Escape") e.target.blur(); return; }
+  if (overlay.classList.contains("open")) {
+    if (e.key === "Escape") closeCard(false);
+    else if (e.key === " " && document.activeElement === document.body) { e.preventDefault(); startPause(); }
+    return;
+  }
+  if (["ArrowRight", "PageDown"].includes(e.key) || (e.key === " " && document.activeElement === document.body)) { e.preventDefault(); show(cur + 1); }
+  else if (["ArrowLeft", "PageUp"].includes(e.key)) { e.preventDefault(); show(cur - 1); }
+  else if (e.key === "Home") show(0);
+  else if ((e.key === "n" || e.key === "N") && cur === slides.length - 1) nextStudent();
+  else if (e.key === "End") show(slides.length - 1);
+  else if ((e.key === "d" || e.key === "D") && slides[cur].id === "board-slide") draw();
+});
+
+render();
+show((parseInt(location.hash.slice(1), 10) || 1) - 1);
+</script>
+</body>
+</html>
